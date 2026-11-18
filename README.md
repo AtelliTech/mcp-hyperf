@@ -8,6 +8,17 @@ A stateless MCP server that serves tools, prompts and resources and uses the Str
 - If the request has an `Origin` header, its host must match the `Host` header. Otherwise the server returns `403`.
 - Supported protocol versions: `2026-07-28` and `2025-06-18`, on the same endpoint.
 
+**Contents**
+
+- [Protocol versions](#protocol-versions)
+- [Requirements](#requirements)
+- [Install](#install)
+- [Write a tool](#write-a-tool)
+- [Write a prompt](#write-a-prompt)
+- [Write a resource](#write-a-resource)
+- [Register them](#register-them)
+- [Mount the route](#mount-the-route)
+
 ## Protocol versions
 
 The server picks the version for each request on its own. A request is treated as `2026-07-28` when its `params._meta` contains `io.modelcontextprotocol/protocolVersion`, its method is `server/discover`, or its `MCP-Protocol-Version` header is `2026-07-28`. Every other request uses `2025-06-18`.
@@ -27,10 +38,23 @@ On `2026-07-28`, results from `server/discover`, the `*/list` methods and `resou
 
 Authentication is up to your app. Run your normal auth middleware on the route, then pass the authenticated user to `handle()` as `$context`. Every tool, prompt and resource receives that value.
 
+## Requirements
+
+- PHP >= 8.3
+- Hyperf >= 3.1
+- An MCP client that speaks protocol version `2025-06-18` or `2026-07-28` over Streamable HTTP
+
 ## Install
+
+Install the package:
 
 ```bash
 composer require atellitech/mcp-hyperf
+```
+
+Publish the config file to `config/autoload/mcp.php`:
+
+```bash
 php bin/hyperf.php vendor:publish atellitech/mcp-hyperf
 ```
 
@@ -162,6 +186,7 @@ Prompts and resources report errors as JSON-RPC errors, so throw `McpException` 
 Register everything in `config/autoload/mcp.php`. The classes are resolved from the container.
 
 ```php
+// config/autoload/mcp.php
 return [
     'name' => 'My API',
     'version' => '1.0.0',
@@ -177,6 +202,7 @@ return [
 ## Mount the route
 
 ```php
+// MCP Controller
 use AtelliTech\Hyperf\Mcp\Hyperf\HttpResponder;
 use AtelliTech\Hyperf\Mcp\McpRequest;
 use AtelliTech\Hyperf\Mcp\McpServer;
@@ -190,6 +216,7 @@ public function handle(McpServer $server, HttpResponder $responder): ResponseInt
 ```
 
 ```php
+// Routes
 Router::addRoute(['GET', 'POST', 'DELETE'], '/mcp', 'App\Controller\McpController@handle', [
     'middleware' => [YourAuthMiddleware::class],
 ]);
